@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Music Genre Classifier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-icon">🎵</span>
+      <div>
+        <h1>AI Music Genre Classifier</h1>
+        <p class="tagline">Spectrogram &rarr; CNN &rarr; Genre, in your browser</p>
+      </div>
+    </div>
+    <div class="status-pill" id="statusPill">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Checking model…</span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- Pipeline explainer -->
+  <section class="card pipeline-card" data-aos>
+    <h2 class="section-title">How it works</h2>
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🎧</div>
+        <h3>Audio</h3>
+        <p>Raw waveform sampled at 22.05 kHz</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🌈</div>
+        <h3>Spectrogram</h3>
+        <p>Mel-frequency image of sound over time</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🧠</div>
+        <h3>CNN</h3>
+        <p>Convolution + pooling extract patterns</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🏷️</div>
+        <h3>Genre</h3>
+        <p>Softmax over 10 genre classes</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <!-- Upload -->
+    <section class="card upload-card">
+      <h2 class="section-title">1. Upload a clip</h2>
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".wav,.mp3,.ogg,.flac,.m4a" hidden>
+        <div class="dropzone-content" id="dropzoneContent">
+          <div class="dropzone-icon">⬆️</div>
+          <p><strong>Drag & drop</strong> an audio file here</p>
+          <p class="muted">or click to browse · WAV, MP3, OGG, FLAC · max 25MB</p>
+        </div>
+      </div>
+
+      <div class="file-info" id="fileInfo" hidden>
+        <div class="file-info-row">
+          <span id="fileName">—</span>
+          <button class="btn-ghost" id="clearBtn">Clear</button>
+        </div>
+        <canvas id="waveformCanvas" height="80"></canvas>
+      </div>
+
+      <button class="btn-primary" id="analyzeBtn" disabled>
+        <span id="analyzeBtnText">Analyze audio</span>
+        <span class="spinner" id="analyzeSpinner" hidden></span>
+      </button>
+      <p class="error-msg" id="errorMsg" hidden></p>
+    </section>
+
+    <!-- Results -->
+    <section class="card results-card">
+      <h2 class="section-title">2. Prediction</h2>
+      <div class="results-placeholder" id="resultsPlaceholder">
+        <div class="placeholder-icon">🎼</div>
+        <p class="muted">Upload and analyze a track to see genre predictions here.</p>
+      </div>
+
+      <div class="results-content" id="resultsContent" hidden>
+        <div class="top-genre" id="topGenre"></div>
+        <div class="bars" id="bars"></div>
+        <p class="meta-line" id="metaLine"></p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Spectrogram -->
+  <section class="card spectrogram-card" id="spectrogramCard" hidden>
+    <h2 class="section-title">Log-mel spectrogram</h2>
+    <p class="muted small">This is the actual image the CNN sees — frequency (mel scale) on the vertical axis, time on the horizontal axis, and color intensity for loudness (dB).</p>
+    <div class="spectrogram-wrap">
+      <img id="spectrogramImg" alt="Mel spectrogram of the uploaded audio">
+    </div>
+  </section>
+
+  <!-- Model insights -->
+  <section class="card insights-card">
+    <h2 class="section-title">Model insights</h2>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="accuracy">Accuracy</button>
+      <button class="tab-btn" data-tab="loss">Loss</button>
+      <button class="tab-btn" data-tab="architecture">Architecture</button>
+      <button class="tab-btn" data-tab="concepts">Concepts</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-accuracy">
+      <canvas id="accuracyChart" height="110"></canvas>
+      <div class="stat-row" id="accuracyStats"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-loss">
+      <canvas id="lossChart" height="110"></canvas>
+    </div>
+
+    <div class="tab-panel" id="tab-architecture">
+      <div class="arch-list" id="archList"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-concepts">
+      <div class="accordion" id="accordion">
+        <details open>
+          <summary>Spectrogram</summary>
+          <p>A spectrogram converts a 1-D audio waveform into a 2-D image showing which frequencies are present at each moment in time. We use the <strong>mel scale</strong>, which spaces frequencies the way human hearing perceives pitch, and a logarithmic (dB) intensity scale to mimic perceived loudness.</p>
+        </details>
+        <details>
+          <summary>Convolution</summary>
+          <p>A convolutional layer slides small learnable filters (e.g. 3&times;3) across the spectrogram image, each filter activating on a specific local pattern — a rhythmic pulse, a timbral texture, a frequency band. Stacking layers lets the network combine simple patterns into increasingly abstract ones.</p>
+        </details>
+        <details>
+          <summary>Pooling</summary>
+          <p>Max-pooling downsamples the feature maps after each convolution, keeping the strongest activations while discarding redundant spatial detail. This shrinks the data, adds translation tolerance (a beat shifted slightly in time still triggers the same feature), and reduces overfitting.</p>
+        </details>
+        <details>
+          <summary>Feature extraction</summary>
+          <p>Early conv layers learn generic patterns (edges, textures in the spectrogram); deeper layers combine these into genre-relevant concepts like "distorted guitar energy" or "steady four-on-the-floor kick". By the final conv block, each spatial location encodes a rich, high-level feature vector.</p>
+        </details>
+        <details>
+          <summary>Global Average Pooling & Dense layers</summary>
+          <p>Instead of flattening every pixel of the last feature map (which would explode the parameter count), Global Average Pooling reduces each channel to a single average value. A small dense layer then combines these into a genre decision.</p>
+        </details>
+        <details>
+          <summary>Softmax & classification</summary>
+          <p>The final layer outputs one score per genre, passed through <strong>softmax</strong> to turn them into a probability distribution that sums to 100%. The genre with the highest probability is the model's prediction — but the full distribution (shown as bars above) reveals how confident, or how torn, the model is.</p>
+        </details>
+        <details>
+          <summary>Training vs. validation accuracy</summary>
+          <p>Training accuracy measures fit on data the model has seen; validation accuracy measures generalization to unseen tracks. A growing gap between the two (training accuracy much higher than validation) signals overfitting — one reason this model uses dropout and batch normalization throughout.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Built for the Deep Learning Lab · CNN trained on the <a href="https://www.kaggle.com/datasets/andradaolteanu/gtzan-dataset-music-genre-classification" target="_blank" rel="noopener">GTZAN</a> genre dataset</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="script.js?v=3"></script>
+</body>
+</html>

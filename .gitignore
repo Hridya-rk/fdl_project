@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+
+data/genres_original/*/
+!data/genres_original/.gitkeep
+
+models/*.keras
+models/*.npz
+models/*.png
+models/*.json
+!models/.gitkeep
