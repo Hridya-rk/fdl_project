@@ -1,0 +1,21 @@
+{
+  "genres": [
+    "blues",
+    "classical",
+    "country",
+    "disco",
+    "hiphop",
+    "jazz",
+    "metal",
+    "pop",
+    "reggae",
+    "rock"
+  ],
+  "input_shape": [
+    128,
+    130,
+    1
+  ],
+  "mean": -40.44124221801758,
+  "std": 15.227361679077148
+}
